@@ -18,85 +18,50 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-// Handle CRUD operations
-$message = '';
-$alert_type = '';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'];
-    
-    switch ($action) {
-        case 'create':
-            $name = $_POST['name'];
-            $description = $_POST['description'];
-            $price = $_POST['price'];
-            $image_url = $_POST['image_url'];
-            $category = $_POST['category'];
-            $stock = $_POST['stock'];
-            
-            $stmt = $conn->prepare("INSERT INTO produck (name, description, price, image_url, category, stock) VALUES (?, ?, ?, ?, ?, ?)");
-            $stmt->bind_param("ssdssi", $name, $description, $price, $image_url, $category, $stock);
-            
-            if ($stmt->execute()) {
-                $message = "Produk berhasil ditambahkan!";
-                $alert_type = "success";
-            } else {
-                $message = "Error: " . $stmt->error;
-                $alert_type = "danger";
-            }
-            $stmt->close();
-            break;
-            
-        case 'update':
-            $id = $_POST['id'];
-            $name = $_POST['name'];
-            $description = $_POST['description'];
-            $price = $_POST['price'];
-            $image_url = $_POST['image_url'];
-            $category = $_POST['category'];
-            $stock = $_POST['stock'];
-            
-            $stmt = $conn->prepare("UPDATE produck SET name=?, description=?, price=?, image_url=?, category=?, stock=? WHERE id=?");
-            $stmt->bind_param("ssdssii", $name, $description, $price, $image_url, $category, $stock, $id);
-            
-            if ($stmt->execute()) {
-                $message = "Produk berhasil diupdate!";
-                $alert_type = "success";
-            } else {
-                $message = "Error: " . $stmt->error;
-                $alert_type = "danger";
-            }
-            $stmt->close();
-            break;
-            
-        case 'delete':
-            $id = $_POST['id'];
-            
-            $stmt = $conn->prepare("DELETE FROM produck WHERE id=?");
-            $stmt->bind_param("i", $id);
-            
-            if ($stmt->execute()) {
-                $message = "Produk berhasil dihapus!";
-                $alert_type = "success";
-            } else {
-                $message = "Error: " . $stmt->error;
-                $alert_type = "danger";
-            }
-            $stmt->close();
-            break;
+// Handle CRUD operations for products
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['product_action'])) {
+    $action = $_POST['product_action'];
+    if ($action === 'create') {
+        $name = $_POST['product_name'];
+        $description = $_POST['product_description'];
+        $price = $_POST['product_price'];
+        $image_url = $_POST['product_image_url'];
+        $category = $_POST['product_category'];
+        $stock = $_POST['product_stock'];
+        $stmt = $conn->prepare("INSERT INTO produck (name, description, price, image_url, category, stock) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->bind_param("ssdssi", $name, $description, $price, $image_url, $category, $stock);
+        $stmt->execute();
+        $stmt->close();
+    } elseif ($action === 'update') {
+        $id = $_POST['product_id'];
+        $name = $_POST['product_name'];
+        $description = $_POST['product_description'];
+        $price = $_POST['product_price'];
+        $image_url = $_POST['product_image_url'];
+        $category = $_POST['product_category'];
+        $stock = $_POST['product_stock'];
+        $stmt = $conn->prepare("UPDATE produck SET name=?, description=?, price=?, image_url=?, category=?, stock=? WHERE id=?");
+        $stmt->bind_param("ssdssii", $name, $description, $price, $image_url, $category, $stock, $id);
+        $stmt->execute();
+        $stmt->close();
+    } elseif ($action === 'delete') {
+        $id = $_POST['product_id'];
+        $stmt = $conn->prepare("DELETE FROM produck WHERE id=?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $stmt->close();
     }
 }
 
 // Fetch all products
 $result = $conn->query("SELECT * FROM produck ORDER BY id DESC");
 $products = [];
-if ($result->num_rows > 0) {
+if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
         $products[] = $row;
     }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -105,39 +70,25 @@ if ($result->num_rows > 0) {
     <title>Admin Dashboard - FoodOrder</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
     <style>
         .sidebar {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            color: white;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
         }
         .sidebar .nav-link {
-            color: rgba(255, 255, 255, 0.8);
-            padding: 15px 20px;
-            border-radius: 10px;
-            margin: 5px 0;
-            transition: all 0.3s;
+            color: #333;
+            padding: 0.5rem 1rem;
         }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+        .sidebar .nav-link.active {
+            color: #2470dc;
+            background-color: #e9ecef;
         }
         .main-content {
-            background: #f8f9fa;
-            min-height: 100vh;
+            padding: 20px;
         }
         .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        .btn-primary {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border: none;
-            border-radius: 25px;
-        }
-        .btn-primary:hover {
-            background: linear-gradient(45deg, #5a6fd8, #6a4190);
+            margin-bottom: 20px;
         }
         .table-container {
             border-radius: 15px;
@@ -155,43 +106,105 @@ if ($result->num_rows > 0) {
     <div class="container-fluid">
         <div class="row">
             <!-- Sidebar -->
-            <div class="col-md-3 col-lg-2 sidebar p-0">
-                <div class="p-4">
-                    <h4 class="text-center mb-4"><i class="fas fa-utensils me-2"></i>FoodOrder</h4>
-                    <div class="text-center mb-4">
-                        <h6>Selamat Datang</h6>
-                        <p class="mb-0"><?php echo $_SESSION['admin_name']; ?></p>
-                    </div>
-                    <nav class="nav flex-column">
-                        <a class="nav-link active" href="#"><i class="fas fa-box me-2"></i>Kelola Produk</a>
-                        <a class="nav-link" href="admin_orders.php"><i class="fas fa-history me-2"></i>Riwayat Pesanan</a>
-                        <a class="nav-link" href="logout.php"><i class="fas fa-sign-out-alt me-2"></i>Logout</a>
-                    </nav>
+            <nav class="col-md-3 col-lg-2 d-md-block bg-light sidebar">
+                <div class="position-sticky pt-3">
+                    <ul class="nav flex-column">
+                        <li class="nav-item mb-2">
+                            <a class="nav-link active" href="admin_dashboard.php">
+                                <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="#userManagement" data-bs-toggle="collapse">
+                                <i class="fas fa-users me-2"></i>Kelola User
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="#productManagement" data-bs-toggle="collapse">
+                                <i class="fas fa-box me-2"></i>Kelola Produk
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="admin_orders.php">
+                                <i class="fas fa-history me-2"></i>Riwayat Pesanan
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link" href="logout.php">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a>
+                        </li>
+                    </ul>
                 </div>
-            </div>
-            
+            </nav>
+
             <!-- Main Content -->
-            <div class="col-md-9 col-lg-10 main-content p-4">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Kelola Produk</h2>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                        <i class="fas fa-plus me-2"></i>Tambah Produk
-                    </button>
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1>Dashboard</h1>
+                    <div class="btn-toolbar mb-2 mb-md-0">
+                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="fas fa-user-plus me-2"></i>Tambah User
+                        </button>
+                    </div>
                 </div>
-                
-                <?php if ($message): ?>
-                <div class="alert alert-<?php echo $alert_type; ?> alert-dismissible fade show" role="alert">
-                    <?php echo $message; ?>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-                <?php endif; ?>
-                
-                <!-- Products Table -->
-                <div class="card table-container">
-                    <div class="card-body p-0">
+
+                <!-- User Management Section -->
+                <div class="card" id="userManagement">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Daftar User</h5>
+                    </div>
+                    <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
-                                <thead class="table-dark">
+                            <table id="userTable" class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
+                                        <th>Role</th>
+                                        <th>Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php
+                                    include 'config.php';
+                                    $sql = "SELECT id, name, role FROM users ORDER BY id DESC";
+                                    $result = $conn->query($sql);
+
+                                    while($row = $result->fetch_assoc()) {
+                                        echo "<tr>
+                                            <td>{$row['id']}</td>
+                                            <td>{$row['name']}</td>
+                                            <td>{$row['role']}</td>
+                                            <td>
+                                                <button class='btn btn-sm btn-primary' onclick='editUser({$row['id']})'>
+                                                    <i class='fas fa-edit'></i>
+                                                </button>
+                                                <button class='btn btn-sm btn-danger' onclick='deleteUser({$row['id']})'>
+                                                    <i class='fas fa-trash'></i>
+                                                </button>
+                                            </td>
+                                        </tr>";
+                                    }
+                                    ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Product Management Section -->
+                <div class="card mt-4" id="productManagement">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Daftar Produk</h5>
+                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                            <i class="fas fa-plus"></i> Tambah Produk
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table id="productTable" class="table table-striped">
+                                <thead>
                                     <tr>
                                         <th>ID</th>
                                         <th>Gambar</th>
@@ -205,84 +218,57 @@ if ($result->num_rows > 0) {
                                 <tbody>
                                     <?php foreach ($products as $product): ?>
                                     <tr>
-                                        <td><?php echo $product['id']; ?></td>
+                                        <td><?= $product['id'] ?></td>
                                         <td>
-                                            <img src="<?php echo $product['image_url']; ?>" 
-                                                 alt="<?php echo $product['name']; ?>" 
-                                                 class="product-image">
+                                            <img src="<?= htmlspecialchars($product['image_url']) ?>" class="product-image" alt="<?= htmlspecialchars($product['name']) ?>">
                                         </td>
-                                        <td><?php echo $product['name']; ?></td>
+                                        <td><?= htmlspecialchars($product['name']) ?></td>
+                                        <td><?= htmlspecialchars($product['category']) ?></td>
+                                        <td>Rp <?= number_format($product['price'], 0, ',', '.') ?></td>
+                                        <td><?= $product['stock'] ?></td>
                                         <td>
-                                            <span class="badge bg-<?php echo $product['category'] === 'MakananBerat' ? 'primary' : 'secondary'; ?>">
-                                                <?php echo $product['category']; ?>
-                                            </span>
-                                        </td>
-                                        <td>Rp <?php echo number_format($product['price'], 0, ',', '.'); ?></td>
-                                        <td><?php echo $product['stock']; ?></td>
-                                        <td>
-                                            <button class="btn btn-sm btn-warning me-1" 
-                                                    onclick="editProduct(<?php echo htmlspecialchars(json_encode($product)); ?>)">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" 
-                                                    onclick="deleteProduct(<?php echo $product['id']; ?>, '<?php echo $product['name']; ?>')">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            <button class="btn btn-warning btn-sm" onclick='editProduct(<?= json_encode($product) ?>)'><i class="fas fa-edit"></i></button>
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin hapus produk ini?')">
+                                                <input type="hidden" name="product_action" value="delete">
+                                                <input type="hidden" name="product_id" value="<?= $product['id'] ?>">
+                                                <button type="submit" class="btn btn-danger btn-sm"><i class="fas fa-trash"></i></button>
+                                            </form>
                                         </td>
                                     </tr>
-                                    <?php endforeach; ?>
+                                    <?php endforeach ?>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-            </div>
+            </main>
         </div>
     </div>
     
-    <!-- Add Product Modal -->
-    <div class="modal fade" id="addProductModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
-                <form method="POST" id="addProductForm" enctype="multipart/form-data">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title"><i class="fas fa-plus me-2"></i>Tambah Produk</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
+                <div class="modal-header">
+                    <h5 class="modal-title">Tambah User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="addUserForm">
                     <div class="modal-body">
-                        <input type="hidden" name="action" value="create">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Nama Produk</label>
-                                    <input type="text" class="form-control" name="name" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Harga</label>
-                                    <input type="number" class="form-control" name="price" step="0.01" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Kategori</label>
-                                    <select class="form-control" name="category" required>
-                                        <option value="MakananBerat">Makanan Berat</option>
-                                        <option value="MakananRingan">Makanan Ringan</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">URL Gambar</label>
-                                    <input type="url" class="form-control" name="image_url" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Stok</label>
-                                    <input type="number" class="form-control" name="stock" required>
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="username" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Deskripsi</label>
-                            <textarea class="form-control" name="description" rows="3" required></textarea>
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" name="role">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -290,129 +276,240 @@ if ($result->num_rows > 0) {
                         <button type="submit" class="btn btn-primary">Simpan</button>
                     </div>
                 </form>
-
-                <!-- Tambahkan script ini di bagian bawah sebelum closing body tag -->
-                <script>
-                document.getElementById('addProductForm').addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    try {
-                        const formData = new FormData(this);
-                        const response = await fetch('add_product.php', {
-                            method: 'POST',
-                            body: formData
-                        });
-                        
-                        const result = await response.json();
-                        
-                        if (result.success) {
-                            alert('Produk berhasil ditambahkan!');
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + result.message);
-                        }
-                    } catch (error) {
-                        console.error('Error:', error);
-                        alert('Terjadi kesalahan saat menambahkan produk');
-                    }
-                });
-                </script>
             </div>
         </div>
     </div>
-    
-    <!-- Edit Product Modal -->
-    <div class="modal fade" id="editProductModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
             <div class="modal-content">
-                <form method="POST" id="editForm">
-                    <div class="modal-header bg-warning text-dark">
-                        <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Produk</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editUserForm">
+                    <input type="hidden" name="user_id" id="edit_user_id">
                     <div class="modal-body">
-                        <input type="hidden" name="action" value="update">
-                        <input type="hidden" name="id" id="editId">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">Nama Produk</label>
-                                    <input type="text" class="form-control" name="name" id="editName" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Harga</label>
-                                    <input type="number" class="form-control" name="price" id="editPrice" step="0.01" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Kategori</label>
-                                    <select class="form-control" name="category" id="editCategory" required>
-                                        <option value="MakananBerat">Makanan Berat</option>
-                                        <option value="MakananRingan">Makanan Ringan</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label class="form-label">URL Gambar</label>
-                                    <input type="url" class="form-control" name="image_url" id="editImageUrl" required>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Stok</label>
-                                    <input type="number" class="form-control" name="stock" id="editStock" required>
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label class="form-label">Username</label>
+                            <input type="text" class="form-control" name="username" id="edit_username" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Deskripsi</label>
-                            <textarea class="form-control" name="description" id="editDescription" rows="3" required></textarea>
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" name="password" placeholder="Kosongkan jika tidak ingin mengubah password">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" name="role" id="edit_role">
+                                <option value="user">User</option>
+                                <option value="admin">Admin</option>
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-warning">Update</button>
+                        <button type="submit" class="btn btn-primary">Update</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Modal Tambah Produk -->
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form class="modal-content" method="POST">
+                <input type="hidden" name="product_action" value="create">
+                <div class="modal-header">
+                    <h5 class="modal-title">Tambah Produk</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Produk</label>
+                        <input type="text" class="form-control" name="product_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deskripsi</label>
+                        <textarea class="form-control" name="product_description" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Harga</label>
+                        <input type="number" class="form-control" name="product_price" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL Gambar</label>
+                        <input type="text" class="form-control" name="product_image_url" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kategori</label>
+                        <select class="form-select" name="product_category" required>
+                            <option value="MakananBerat">Makanan Berat</option>
+                            <option value="MakananRingan">Makanan Ringan</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stok</label>
+                        <input type="number" class="form-control" name="product_stock" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Edit Produk -->
+    <div class="modal fade" id="editProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form class="modal-content" method="POST" id="editProductForm">
+                <input type="hidden" name="product_action" value="update">
+                <input type="hidden" name="product_id" id="edit_product_id">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Produk</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Nama Produk</label>
+                        <input type="text" class="form-control" name="product_name" id="edit_product_name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Deskripsi</label>
+                        <textarea class="form-control" name="product_description" id="edit_product_description" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Harga</label>
+                        <input type="number" class="form-control" name="product_price" id="edit_product_price" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">URL Gambar</label>
+                        <input type="text" class="form-control" name="product_image_url" id="edit_product_image_url" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Kategori</label>
+                        <select class="form-select" name="product_category" id="edit_product_category" required>
+                            <option value="MakananBerat">Makanan Berat</option>
+                            <option value="MakananRingan">Makanan Ringan</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stok</label>
+                        <input type="number" class="form-control" name="product_stock" id="edit_product_stock" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-warning">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
     <script>
-    function editProduct(product) {
-        document.getElementById('editId').value = product.id;
-        document.getElementById('editName').value = product.name;
-        document.getElementById('editPrice').value = product.price;
-        document.getElementById('editCategory').value = product.category;
-        document.getElementById('editImageUrl').value = product.image_url;
-        document.getElementById('editStock').value = product.stock;
-        document.getElementById('editDescription').value = product.description;
-        
-        var myModal = new bootstrap.Modal(document.getElementById('editProductModal'));
-        myModal.show();
-    }
+        $(document).ready(function() {
+            $('#userTable').DataTable();
+            $('#productTable').DataTable();
+        });
 
-    function deleteProduct(id, name) {
-        if (confirm("Anda yakin ingin menghapus produk '" + name + "'?")) {
-            var form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '';
+        // Add User Form Submit
+        document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('process_register.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('User berhasil ditambahkan!');
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Terjadi kesalahan!');
+            }
+        });
 
-            var hiddenField1 = document.createElement('input');
-            hiddenField1.type = 'hidden';
-            hiddenField1.name = 'action';
-            hiddenField1.value = 'delete';
-            form.appendChild(hiddenField1);
-
-            var hiddenField2 = document.createElement('input');
-            hiddenField2.type = 'hidden';
-            hiddenField2.name = 'id';
-            hiddenField2.value = id;
-            form.appendChild(hiddenField2);
-
-            document.body.appendChild(form);
-            form.submit();
+        // Edit User Function
+        function editUser(id) {
+            // Fetch user data and populate the form
+            // Show the modal
+            var myModal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            myModal.show();
         }
-    }
+
+        // Update User Form Submit
+        document.getElementById('editUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('update_user.php', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('User berhasil diupdate!');
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Terjadi kesalahan!');
+            }
+        });
+
+        // Delete User Function
+        async function deleteUser(id) {
+            if (!confirm('Apakah Anda yakin ingin menghapus user ini?')) return;
+            
+            try {
+                const response = await fetch('delete_user.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert('User berhasil dihapus!');
+                    location.reload();
+                } else {
+                    alert(result.message);
+                }
+            } catch (error) {
+                alert('Terjadi kesalahan!');
+            }
+        }
+
+        // Edit Product Modal
+        function editProduct(product) {
+            document.getElementById('edit_product_id').value = product.id;
+            document.getElementById('edit_product_name').value = product.name;
+            document.getElementById('edit_product_description').value = product.description;
+            document.getElementById('edit_product_price').value = product.price;
+            document.getElementById('edit_product_image_url').value = product.image_url;
+            document.getElementById('edit_product_category').value = product.category;
+            document.getElementById('edit_product_stock').value = product.stock;
+            var myModal = new bootstrap.Modal(document.getElementById('editProductModal'));
+            myModal.show();
+        }
     </script>
 </body>
 </html>

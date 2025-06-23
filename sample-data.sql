@@ -1,13 +1,3 @@
--- Insert sample admin
-INSERT INTO admin (name, password) VALUES 
-('admin', 'admin123'),
-
-
--- Insert sample users
-INSERT INTO users (name, password) VALUES 
-('user', 'user123'),
-
-
 -- Insert sample products
 INSERT INTO produck (name, description, price, image_url, category, stock) VALUES 
 ('Nasi Gudeg Yogya', 'Nasi gudeg khas Yogyakarta dengan ayam dan telur', 25000.00, 'https://images.unsplash.com/photo-1565299624946-b28f40a0ca4b?w=400', 'MakananBerat', 50),

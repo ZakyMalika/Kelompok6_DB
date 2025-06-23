@@ -182,22 +182,18 @@
         // Handle User Login
         document.getElementById('userLoginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
             formData.append('type', 'user');
-            
             try {
-                const response = await fetch('login_process.php', {
+                const response = await fetch('login.php', {
                     method: 'POST',
                     body: formData
                 });
-                
                 const result = await response.json();
-                
                 if (result.success) {
                     showAlert(result.message, 'success');
                     setTimeout(() => {
-                        window.location.href = 'index.html';
+                        window.location.href = result.redirect;
                     }, 1500);
                 } else {
                     showAlert(result.message, 'danger');
@@ -210,22 +206,18 @@
         // Handle Admin Login
         document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
             const formData = new FormData(this);
             formData.append('type', 'admin');
-            
             try {
-                const response = await fetch('login_process.php', {
+                const response = await fetch('login.php', {
                     method: 'POST',
                     body: formData
                 });
-                
                 const result = await response.json();
-                
                 if (result.success) {
                     showAlert(result.message, 'success');
                     setTimeout(() => {
-                        window.location.href = 'admin_dashboard.php';
+                        window.location.href = result.redirect;
                     }, 1500);
                 } else {
                     showAlert(result.message, 'danger');

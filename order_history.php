@@ -1,10 +1,6 @@
 <?php
+header('Content-Type: application/json');
 session_start();
-
-if (!isset($_SESSION['logged_in']) || $_SESSION['user_type'] !== 'user') {
-    header('Location: login.html');
-    exit;
-}
 
 $host = 'localhost';
 $dbname = 'restorant';
@@ -12,29 +8,33 @@ $user = 'root';
 $pass = '';
 
 try {
-    $conn = new mysqli($host, $user, $pass, $dbname);
-    if ($conn->connect_error) {
-        throw new Exception("Connection failed: " . $conn->connect_error);
-    }
+    $data = json_decode(file_get_contents('php://input'), true);
+    if (!isset($data['user_id'])) throw new Exception("User tidak valid");
 
-    $userId = $_SESSION['user_id'];
-    
-    // Get user's order history
-    $sql = "SELECT o.*, p.name as product_name, p.image_url 
-            FROM orders o 
-            JOIN produck p ON o.product_id = p.id 
-            WHERE o.user_id = ? 
-            ORDER BY o.order_date DESC";
-            
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("i", $userId);
+    $user_id = intval($data['user_id']);
+    $conn = new mysqli($host, $user, $pass, $dbname);
+    if ($conn->connect_error) throw new Exception("Koneksi gagal: " . $conn->connect_error);
+
+    $stmt = $conn->prepare(
+        "SELECT o.order_date, p.name AS product_name, p.image_url, o.quantity, o.total_price
+         FROM orders o
+         JOIN produck p ON o.product_id = p.id
+         WHERE o.user_id = ?
+         ORDER BY o.order_date DESC"
+    );
+    $stmt->bind_param("i", $user_id);
     $stmt->execute();
     $result = $stmt->get_result();
-    
+
     $orders = [];
     while ($row = $result->fetch_assoc()) {
         $orders[] = $row;
     }
+    echo json_encode(['success' => true, 'orders' => $orders]);
+} catch (Exception $e) {
+    echo json_encode(['success' => false, 'message' => $e->getMessage()]);
+}
+?>
 } catch (Exception $e) {
     $error = $e->getMessage();
 }
